@@ -1,0 +1,46 @@
+#!/usr/bin/bash
+
+# stop le script en cas d'erreur
+set -e
+
+USER=$1
+PASS=$2
+DB_NAME="${USER}_wp"
+DB_USER="${USER}_wp"
+DB_PASS="${PASS}"
+SERVER_NAME="${USER}.wordpress"
+WP_VERSION="6.9.4"
+
+echo "Téléchargement WordPress..."
+wget -q -P /tmp https://wordpress.org/wordpress-${WP_VERSION}.tar.gz
+tar -xzf /tmp/wordpress-${WP_VERSION}.tar.gz -C /var/www/
+rm /tmp/wordpress-${WP_VERSION}.tar.gz
+
+echo "Configuration VHost Apache..."
+cat > /etc/apache2/sites-available/${SERVER_NAME}.conf <<EOF
+<VirtualHost *:80>
+    ServerName ${SERVER_NAME}.lan
+    DocumentRoot /var/www/wordpress
+</VirtualHost>
+EOF
+
+sed -i "s/database_name_here/${DB_NAME}/;s/username_here/${DB_USER}/;s/password_here/${DB_PASS}/" /var/www/wordpress/wp-config-sample.php
+cp /var/www/wordpress/wp-config-sample.php /var/www/wordpress/wp-config.php
+
+echo "Configuration MySQL..."
+mysql -e "
+CREATE DATABASE IF NOT EXISTS ${DB_NAME};
+CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
+GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'localhost';
+FLUSH PRIVILEGES;
+"
+
+echo "Activation du site..."
+a2ensite ${SERVER_NAME}
+systemctl reload apache2
+
+echo "Permissions..."
+chown -R www-data:www-data /var/www/wordpress
+
+echo "WordPress prêt sur http://${SERVER_NAME}.lan"
+
