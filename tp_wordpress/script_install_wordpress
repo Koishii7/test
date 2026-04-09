@@ -14,7 +14,6 @@ wget -q -P /tmp https://wordpress.org/wordpress-${WP_VERSION}.tar.gz
 tar -xzf /tmp/wordpress-${WP_VERSION}.tar.gz -C /var/www/
 rm /tmp/wordpress-${WP_VERSION}.tar.gz
 
-
 echo "Configuration VHost Apache..."
 cat > /etc/apache2/sites-available/${SERVER_NAME}.conf <<EOF
 <VirtualHost *:80>
@@ -22,6 +21,9 @@ cat > /etc/apache2/sites-available/${SERVER_NAME}.conf <<EOF
     DocumentRoot /var/www/wordpress
 </VirtualHost>
 EOF
+
+sed -i "s/database_name_here/${DB_NAME}/;s/username_here/${DB_USER}/;s/password_here/${DB_PASS}/" /var/www/wordpress/wp-config-sample.php
+cp /var/www/wordpress/wp-config-sample.php /var/www/wordpress/wp-config.php
 
 echo "Configuration MySQL..."
 mysql -e "
