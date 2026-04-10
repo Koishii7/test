@@ -1,0 +1,49 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for lamp
+- name: inclusion des variables
+  include_vars: '{{ ansible_os_family }}.yml'
+  tags:
+    - mariadb
+
+- name: inclusion des variables db
+  include_vars: db.yml
+  tags:
+    - mariadb
+
+- name: installation lamp
+  package:
+    name: '{{ item }}'
+    state: present
+  loop: '{{ lamp_packages }}'
+
+- name: démarrage des services redhat
+  service:
+    state: started
+    name: '{{ item }}'
+    enabled: true
+  loop:
+    - httpd
+    - mariadb
+  when: ansible_os_family == 'RedHat'
+
+- name: activation du mod_rewrite de apache sur debian
+  apache2_module:
+    name: rewrite
+    state: present
+  when: ansible_os_family == 'Debian'
+  notify:
+    - restarting_apache
+
+- name: mise en place de index.html
+  template:
+    src: index.j2
+    dest: /var/www/html/index.html
+    owner: '{{ apache.user }}'
+    group: '{{ apache.group }}'
+    mode : 0644
+
+- name: création utilisateur mariadb
+  import_tasks: mariadb.yml
+  tags:
+    - mariadb

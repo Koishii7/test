@@ -1,0 +1,11 @@
+---
+
+- hosts: all
+  vars:
+    file: "/etc/passwd"
+    dir: "/tmp"
+  tasks:
+    - name: copy file
+      copy:
+        src: "{{ file }}"
+        dest: "{{ dir }}"
